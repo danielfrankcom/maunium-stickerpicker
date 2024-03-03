@@ -1,0 +1,6 @@
+{
+  "packs": [
+    "microsoft-3d.json"
+  ],
+  "homeserver_url": "https://matrix.maytrucks.ca"
+}
