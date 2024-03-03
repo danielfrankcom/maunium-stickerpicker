@@ -56,7 +56,7 @@ def add_to_index(name: str, output_dir: str) -> None:
         print(f"Added {name} to {index_path}")
 
 
-def make_sticker(mxc: str, width: int, height: int, size: int,
+def make_sticker(mxc: str, thumbnail: str, width: int, height: int, size: int, twidth: int, theight: int, tsize: int,
                  body: str = "") -> matrix.StickerInfo:
     return {
         "body": body,
@@ -65,15 +65,15 @@ def make_sticker(mxc: str, width: int, height: int, size: int,
             "w": width,
             "h": height,
             "size": size,
-            "mimetype": "image/png",
+            "mimetype": "image/webp",
 
             # Element iOS compatibility hack
-            "thumbnail_url": mxc,
+            "thumbnail_url": thumbnail,
             "thumbnail_info": {
-                "w": width,
-                "h": height,
-                "size": size,
-                "mimetype": "image/png",
+                "w": twidth,
+                "h": theight,
+                "size": tsize,
+                "mimetype": "image/gif",
             },
         },
         "msgtype": "m.sticker",

@@ -22,6 +22,8 @@ import asyncio
 import string
 import json
 
+from PIL import Image
+
 try:
     import magic
 except ImportError:
@@ -43,12 +45,17 @@ async def upload_sticker(file: str, directory: str, old_stickers: Dict[str, matr
                          ) -> Optional[matrix.StickerInfo]:
     if file.startswith("."):
         return None
-    path = os.path.join(directory, file)
-    if not os.path.isfile(path):
-        return None
+
+    image_path = os.path.join(directory, file)
+    if not os.path.isfile(image_path):
+        raise Exception()
+
+    thumbnail_path = os.path.join(directory, "../gif-back/", file.replace(".webp", ".gif"))
+    if not os.path.isfile(image_path):
+        raise Exception()
 
     if magic:
-        mime = magic.from_file(path, mime=True)
+        mime = magic.from_file(image_path, mime=True)
     else:
         mime, _ = mimetypes.guess_type(file)
     if not mime.startswith("image/"):
@@ -56,8 +63,10 @@ async def upload_sticker(file: str, directory: str, old_stickers: Dict[str, matr
 
     print(f"Processing {file}", end="", flush=True)
     try:
-        with open(path, "rb") as image_file:
+        with open(image_path, "rb") as image_file:
             image_data = image_file.read()
+        with open(thumbnail_path, "rb") as thumbnail_file:
+            thumbnail_data = thumbnail_file.read()
     except Exception as e:
         print(f"... failed to read file: {e}")
         return None
@@ -70,20 +79,22 @@ async def upload_sticker(file: str, directory: str, old_stickers: Dict[str, matr
 
     sticker_id = f"sha256:{sha256(image_data).hexdigest()}"
     print(".", end="", flush=True)
-    if sticker_id in old_stickers:
-        sticker = {
-            **old_stickers[sticker_id],
-            "body": name,
-        }
-        print(f".. using existing upload")
-    else:
-        image_data, width, height = util.convert_image(image_data)
-        print(".", end="", flush=True)
-        mxc = await matrix.upload(image_data, "image/png", file)
-        print(".", end="", flush=True)
-        sticker = util.make_sticker(mxc, width, height, len(image_data), name)
-        sticker["id"] = sticker_id
-        print(" uploaded", flush=True)
+
+    with Image.open(image_path) as img:
+        width, height = img.size
+
+    with Image.open(thumbnail_path) as thumb:
+        twidth, theight = thumb.size
+
+    print(".", end="", flush=True)
+    mxc = await matrix.upload(image_data, "image/webp", file)
+    tmxc = await matrix.upload(thumbnail_data, "image/gif", file)
+
+    print(".", end="", flush=True)
+    sticker = util.make_sticker(mxc, tmxc, width, height, len(image_data), twidth, theight, len(thumbnail_data), name)
+    sticker["id"] = sticker_id
+    print(" uploaded", flush=True)
+
     return sticker
 
 
